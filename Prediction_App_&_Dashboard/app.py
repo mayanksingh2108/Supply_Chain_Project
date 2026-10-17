@@ -26,17 +26,26 @@ COLORS = {
     "success": "#00A86B"      # Jade Green
 }
 
+# Determine the absolute path to the directory containing app.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # ==========================================
 # 2. CORE DATA FUNCTIONS (Cached)
 # ==========================================
 @st.cache_data
 def load_data():
-    df = pd.read_csv('SupplyChainData.csv', encoding='latin-1')
+    # Safely load dataset using absolute path
+    data_path = os.path.join(BASE_DIR, 'SupplyChainData.csv')
+    df = pd.read_csv(data_path, encoding='latin-1')
+    
+    # Standardize column names
     df.columns = df.columns.str.lower().str.replace(' ', '_')
     
+    # Filter out canceled orders
     if 'delivery_status' in df.columns:
         df = df[df['delivery_status'] != 'shipping canceled']
     
+    # Datetime conversions & Feature engineering
     df['order_date_(dateorders)'] = pd.to_datetime(df['order_date_(dateorders)'], errors='coerce')
     df['shipping_date_(dateorders)'] = pd.to_datetime(df['shipping_date_(dateorders)'], errors='coerce')
     
@@ -62,7 +71,8 @@ def get_frequency_mappings(df):
 
 @st.cache_resource
 def load_model():
-    model_path = 'rf_model_balanced.pkl'
+    # Safely load model using absolute path
+    model_path = os.path.join(BASE_DIR, 'rf_model_balanced.pkl')
     if os.path.exists(model_path):
         with open(model_path, 'rb') as file:
             return pickle.load(file)
@@ -75,7 +85,6 @@ model = load_model()
 # ==========================================
 # 3. SIDEBAR NAVIGATION
 # ==========================================
-# Using the exact same emoji and text to ensure the page routing works perfectly
 st.sidebar.image(
     "https://img.freepik.com/premium-photo/visual-supply-chain-management-app-interface-monitoring-managing-logistics-operations_1314467-61063.jpg",
     width=200
@@ -245,7 +254,7 @@ elif page == "🔮 Prediction Model":
     st.markdown("---")
 
     if model is None:
-        st.error("⚠️ Model not found! Please ensure 'rf_model_balanced.pkl' is in the same directory as this app.")
+        st.error(f"⚠️ Model not found! Please ensure 'rf_model_balanced.pkl' is uploaded to the repository alongside app.py.")
     else:
         st.subheader("Enter Order Details")
         
